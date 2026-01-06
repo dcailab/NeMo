@@ -321,7 +321,18 @@ class EncDecHybridRNNTCTCBPEModel(EncDecHybridRNNTCTCModel, ASRBPEMixin):
         self.decoder = EncDecHybridRNNTCTCBPEModel.from_config_dict(new_decoder_config)
 
         del self.loss
-        self.loss = RNNTLoss(num_classes=self.joint.num_classes_with_blank - 1)
+        
+        loss_name, loss_kwargs = self.extract_rnnt_loss_cfg(self.cfg.get('loss', None))
+        num_classes = self.joint.num_classes_with_blank - 1  # for standard RNNT and multi-blank
+
+        if loss_name == 'tdt':
+            num_classes = num_classes - self.joint.num_extra_outputs
+
+        self.loss = RNNTLoss(
+            num_classes=num_classes,
+            loss_name=loss_name,
+            loss_kwargs=loss_kwargs,
+        )
 
         if decoding_cfg is None:
             # Assume same decoding config as before
