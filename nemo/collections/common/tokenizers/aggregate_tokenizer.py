@@ -117,12 +117,18 @@ class AggregateTokenizer(TokenizerSpec):
 
         return token_ids
 
-    def tokens_to_text(self, tokens, lang_id):
+    def tokens_to_text(self, tokens, lang_id=None):
         if isinstance(tokens, np.ndarray):
             tokens = tokens.tolist()
 
+        # lang_id 가 None 이면 등록된 첫 언어로 폴백 (RNNTBPEDecoding.decode_tokens_to_str 는
+        # lang_id 없이 호출하므로 timestamps/WER 계산 시 TypeError 방지).
+        if lang_id is None:
+            lang_id = next(iter(self.tokenizers_dict.keys()))
+
         tokenizer = self.tokenizers_dict[lang_id]
-        return tokenizer.decode_pieces(tokens)
+        # SentencePieceTokenizer 등은 decode_pieces 가 없으므로 존재하는 tokens_to_text 를 사용.
+        return tokenizer.tokens_to_text(tokens)
 
     def ids_to_text(self, ids):
         if isinstance(ids, (np.ndarray, torch.Tensor)):
